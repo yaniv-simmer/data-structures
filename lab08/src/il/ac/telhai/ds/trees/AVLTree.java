@@ -134,7 +134,7 @@ public class AVLTree<T extends Comparable<T>> {
             else {
                 return "LR";
             }
-        } else if (diff < 0) {
+        } else {
             int RR_height = right.right == null ? -1 : right.right.height;
             int RL_height = right.left == null ? -1 : right.left.height;
             if (RR_height > RL_height)
@@ -142,7 +142,6 @@ public class AVLTree<T extends Comparable<T>> {
             else
                 return "RL";
         }
-        return "";
     }
 
     private void updateHeight() {
