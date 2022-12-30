@@ -8,13 +8,13 @@ public class AVLTree<T extends Comparable<T>> {
 
     private AVLTree<T> left;
     private AVLTree<T> right;
-    private AVLTree<T> parent;
+    private AVLTree<T> dady;      //this is the father
     private final T data;
     private int height;
 
     public AVLTree(T value) {
         left = null;
-        parent = null;
+        dady = null;
         right = null;
         data = value;
         height = 0;
@@ -24,47 +24,45 @@ public class AVLTree<T extends Comparable<T>> {
     //add the value to the tree, and return the updated root of the tree.
     public AVLTree<T> add(T value) {
 
+        //first add the node
         if (data.compareTo(value) > 0) {
             if (left == null) {
                 left = new AVLTree<>(value);
-                left.parent = this; //////////////////
+                left.dady = this;
             } else left = left.add(value);
         } else {
             if (right == null) {
                 right = new AVLTree<>(value);
-                right.parent = this; ///////////////////
+                right.dady = this;
             } else right = right.add(value);
         }
+        postOrderHeightUpdate();
 
-        if (right != null)
-            this.right.parent = this;
-        if (left != null)
-            this.left.parent = this;
-
-        postOrderUpdate();
-        if (!isBalance()) {
-            String x = checkTypeOfUnBalance(value);
-            switch (x) {
-                case "LL":
-                    LeftLeft();
-
-                    return this.parent;
-                case "RR":
-                    RightRight();
-                    return this.parent;
-                case "RL":
-                    right.LeftLeft();
-                    RightRight();
-                    parent.parent = null;
-                    return this.parent;
-                case "LR":
-                    left.RightRight();
-                    LeftLeft();
-                    parent.parent = null;
-                    return this.parent;
+        //now check if the tree is balanced after the add
+        String isBalance = checkTypeOfUnbalance();
+        switch (isBalance) {
+            case "LL" -> {
+                LeftLeft();
+                return this.dady;
+            }
+            case "RR" -> {
+                RightRight();
+                return this.dady;
+            }
+            case "RL" -> {
+                right.LeftLeft();
+                RightRight();
+                return this.dady;
+            }
+            case "LR" -> {
+                left.RightRight();
+                LeftLeft();
+                return this.dady;
+            }
+            default -> {         //tree is balanced
+                return this;
             }
         }
-        return this;
     }
 
 
@@ -72,101 +70,79 @@ public class AVLTree<T extends Comparable<T>> {
         return (right == null && left == null);
     }
 
-    private void postOrderUpdate() {
-        if (isLeaf()) {
+
+    //update the whole damn tree
+    private void postOrderHeightUpdate() {
+        if (isLeaf())
             height = 0;
-            return;
-        }
         if (left != null)
-            left.postOrderUpdate();
+            left.postOrderHeightUpdate();
         if (right != null)
-            right.postOrderUpdate();
+            right.postOrderHeightUpdate();
         updateHeight();
-        return;
     }
 
 
     private void RightRight() {
-        if (parent != null) {
-            if (this.data.compareTo(parent.getValue()) < 0) {
-                parent.left = getRight();
-            } else parent.right = getRight();
-
+        if (dady != null) {
+            if (data.compareTo(dady.getValue()) < 0) {
+                dady.left = getRight();
+            } else dady.right = getRight();
         } else {
-            this.parent = getRight();
-            getRight().parent = null;
+            this.dady = getRight();
+            getRight().dady = null;
         }
 
         AVLTree<T> temp = getRight();
         this.right = getRight().getLeft();
         temp.left = this;
-        temp.parent = this.parent;
-        this.parent = temp;
-
+        temp.dady = dady;
+        this.dady = temp;
     }
 
     private void LeftLeft() {
-        if (parent != null) {
-            if (this.data.compareTo(parent.getValue()) < 0) {
-                parent.left = getLeft();
-            } else parent.right = getLeft();
-
+        if (dady != null) {
+            if (data.compareTo(dady.getValue()) < 0) {
+                dady.left = getLeft();
+            } else dady.right = getLeft();
         } else {
-            this.parent = getLeft();
-            getLeft().parent = null;
+            dady = getLeft();
+            getLeft().dady = null;
         }
 
         AVLTree<T> temp = getLeft();
         this.left = getLeft().getRight();
         temp.right = this;
-        temp.parent = this.parent;
-        this.parent = temp;
-
+        temp.dady = dady;
+        this.dady = temp;
     }
 
-    private String checkTypeOfUnBalance(T value) {
+    private String checkTypeOfUnbalance() {
 
+        int leftHeight = (left == null) ? -1 : left.height;
+        int rightHeight = (right == null) ? -1 : right.height;
+        int diff = leftHeight - rightHeight;
 
-        int lefthight = left == null ? -1 : left.height;
-        int righthight = right == null ? -1 : right.height;
+        if (abs(diff) <= 1)
+            return ""; //the tree is balanced !
 
-
-        int diff = lefthight - righthight;
-
-        if (diff > 0) { //left os bigger then right
-            int LLhight = left.left == null ? -1 : left.left.height;
-            int LRhight = left.right == null ? -1 : left.right.height;
-            if (LLhight > LRhight)
+        if (diff > 0) {     //left subtree is bigger then the right one
+            int LL_height = (left.left == null) ? -1 : left.left.height;
+            int LR_height = (left.right == null) ? -1 : left.right.height;
+            if (LL_height > LR_height)
                 return "LL";
             else {
                 return "LR";
             }
-        } else {
-            int RRH = right.right == null ? -1 : right.right.height;
-            int RLH = right.left == null ? -1 : right.left.height;
-            if (RRH > RLH)
+        } else if (diff < 0) {
+            int RR_height = right.right == null ? -1 : right.right.height;
+            int RL_height = right.left == null ? -1 : right.left.height;
+            if (RR_height > RL_height)
                 return "RR";
             else
                 return "RL";
         }
-
-//        try {
-//            if (getRight().getRight().getValue()==value)
-//                return "RR";
-//        } catch (NullPointerException e) {
-//        }
-//        try {
-//            if (getRight().getLeft().getValue()==value)
-//                return "RL";
-//        } catch (NullPointerException e) {
-//        }
-//        try {
-//            if (getLeft().getRight().getValue()==value)
-//                return "LR";
-//        } catch (NullPointerException e) {
-//        }
-//
-//        return "LL";
+        return "";
     }
 
     private void updateHeight() {
@@ -176,15 +152,6 @@ public class AVLTree<T extends Comparable<T>> {
             height = left.height + 1;
         if (left == null && right != null)
             height = right.height + 1;
-    }
-
-    private boolean isBalance() {
-        if (left != null && right != null)
-            return abs(left.height - right.height) <= 1;
-        if (left == right)
-            return true;
-
-        return left == null ? right.height < 1 : left.height < 1;
     }
 
     //return the value in this node
